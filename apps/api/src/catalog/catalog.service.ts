@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { existsSync } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PathService } from '../core/path.service';
@@ -28,10 +29,31 @@ export class CatalogService {
   async modulesRoots(): Promise<string[]> {
     const envDir = process.env.CATALOG_MODULES_DIR;
     if (envDir) return [this.paths.canonical(envDir)];
-    const repoRoot = path.resolve(process.cwd(), '..', '..');
+    const repoRoot = this.repoRoot();
     const modules = path.join(repoRoot, 'modules');
     const roots = [modules, repoRoot].map((r) => this.paths.canonical(r));
     return [...new Set(roots)];
+  }
+
+  /**
+   * Locate the repo root independent of the launch directory: works whether you
+   * run from the repo root (`npm start` → cwd = root) or from apps/api
+   * (`start:dev` → cwd = apps/api), and in prod where the code lives in
+   * apps/api/dist. Walk up from cwd, then from this file, until we hit a dir
+   * that looks like the repo (has `apps/` or `modules/`).
+   */
+  private repoRoot(): string {
+    const isRoot = (d: string) => existsSync(path.join(d, 'apps')) || existsSync(path.join(d, 'modules'));
+    for (const start of [process.cwd(), __dirname]) {
+      let dir = start;
+      for (let i = 0; i < 8; i++) {
+        if (isRoot(dir)) return dir;
+        const up = path.dirname(dir);
+        if (up === dir) break;
+        dir = up;
+      }
+    }
+    return process.cwd();
   }
 
   /** Back-compat: the primary modules dir (modules/ if present, else repo root). */
