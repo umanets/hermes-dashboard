@@ -1,0 +1,99 @@
+# Hermes MCP catalog manifest for the music tools (Apple Music + TIDAL).
+# Modeled on hermes-agent/optional-mcps/n8n/manifest.yaml. To register:
+#   - copy this into hermes-agent/optional-mcps/music/manifest.yaml, OR
+#   - add the mcp_servers snippet at the bottom directly to ~/.hermes/config.yaml.
+manifest_version: 1
+
+name: music
+description: Read Apple Music / TIDAL playlists, search, recommend, and (later) create playlists.
+source: https://github.com/your-org/hermes-music-tools
+
+# Local stdio MCP server (no public port). ${INSTALL_DIR} is the path to this repo.
+transport:
+  type: stdio
+  command: "python"
+  args:
+    - "${INSTALL_DIR}/server.py"
+
+install:
+  type: git
+  url: https://github.com/your-org/hermes-music-tools.git
+  ref: main
+  bootstrap:
+    - "python -m venv .venv"
+    - ".venv/Scripts/pip install -e ."   # on POSIX: .venv/bin/pip install -e .
+
+auth:
+  type: api_key
+  env:
+    - name: APPLE_TEAM_ID
+      prompt: "Apple Developer Team ID (10 chars)"
+      required: true
+      secret: false
+    - name: APPLE_KEY_ID
+      prompt: "MusicKit Key ID (the .p8 key identifier)"
+      required: true
+      secret: false
+    - name: APPLE_PRIVATE_KEY_PATH
+      prompt: "Absolute path to your MusicKit private key .p8 file (will be copied into the install)"
+      required: true
+      secret: false
+      file: true
+    - name: APPLE_MUSIC_STOREFRONT
+      prompt: "Apple Music storefront (e.g. us, gb, ua)"
+      default: "us"
+      required: false
+      secret: false
+    - name: APPLE_MUSIC_USER_TOKEN
+      prompt: "Music User Token (or leave blank and run the authorize helper)"
+      required: false
+      secret: true
+    - name: TIDAL_CLIENT_ID
+      prompt: "TIDAL app client id"
+      required: false
+      secret: false
+    - name: TIDAL_CLIENT_SECRET
+      prompt: "TIDAL app client secret"
+      required: false
+      secret: true
+    - name: TIDAL_REDIRECT_URI
+      prompt: "TIDAL redirect URI (must match a registered one)"
+      default: "http://127.0.0.1:8765/callback"
+      required: false
+      secret: false
+    - name: TIDAL_COUNTRY
+      prompt: "TIDAL country code"
+      default: "US"
+      required: false
+      secret: false
+
+# Read-mostly default surface: read tools + recommend/preview/feedback are
+# pre-enabled; the mutating tools (create/add/sync) are opt-in and themselves
+# refuse to act without confirmed=true.
+tools:
+  default_enabled:
+    - music_get_accounts_status
+    - music_get_playlists
+    - music_get_playlist_tracks
+    - music_search_tracks
+    - music_recommend_tracks
+    - music_preview_playlist
+    - music_record_feedback
+    # Opt-in writes (each requires confirmed=true at call time):
+    # - music_create_playlist
+    # - music_add_tracks
+    # - music_sync_playlist
+
+post_install: |
+  1. Ensure APPLE_* and/or TIDAL_* env vars are set (see .env.example).
+  2. Authorize the services you use:
+        python -m music_service.cli auth apple      # MusicKit JS -> Music User Token
+        python -m music_service.cli auth tidal       # OAuth PKCE -> access/refresh tokens
+  3. Restart your Hermes session so the music tools load.
+
+# --- Direct config.yaml snippet (alternative to the catalog install) ---------
+# mcp_servers:
+#   music:
+#     transport: stdio
+#     command: python
+#     args: ["D:/work/hermes-tools/apple-tidal/server.py"]

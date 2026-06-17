@@ -1,0 +1,20 @@
+{
+  "name": "hermes-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hermes management dashboard + installable module catalog.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace @hermes-dashboard/api run start:dev",
+    "dev:web": "npm --workspace @hermes-dashboard/web run dev",
+    "build": "npm --workspace @hermes-dashboard/api run build && npm --workspace @hermes-dashboard/web run build",
+    "start": "npm run build && node apps/api/dist/main.js",
+    "serve": "node apps/api/dist/main.js",
+    "test": "npm --workspace @hermes-dashboard/api run test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,36 @@
+# Hindsight — learning agent memory (vectorize-io/hindsight), wired as an HTTP MCP server.
+#
+# The dashboard runs ONE shared Hindsight container (Agents screen → "Memory service") on the
+# `hermes-net` docker network. Each client's Hermes container reaches it by DNS name `hindsight`
+# and gets its OWN memory bank via the per-bank MCP URL (bank_id = the client id). No auth — the
+# bank URL is the isolation boundary inside the private network.
+#
+# Because transport is `http`, installing this does NOT run any venv/pip in the container — the
+# install pipeline just writes the mcp_servers.hindsight block with the bank URL resolved.
+manifest_version: 1
+
+name: hindsight
+description: >-
+  Hindsight learning memory — retain facts/experiences, recall across sessions, and reflect to
+  form mental models. Per-client memory bank on the shared Hindsight service.
+
+transport:
+  type: http
+  # ${BANK_ID} is injected by the install pipeline (= the client id). Trailing slash required.
+  url: "http://hindsight:8888/mcp/${BANK_ID}/"
+
+auth:
+  type: none
+  env: []
+
+# Hindsight's MCP exposes these per-bank tools (the bank is implicit from the URL).
+tools:
+  default_enabled:
+    - retain
+    - recall
+    - reflect
+
+post_install: |
+  Start the shared "Memory service (Hindsight)" on the Agents screen first (needs OPENROUTER_API_KEY
+  on the dashboard). After install, restart the agent's gateway so it loads the memory MCP.
+  Use EITHER hindsight OR vector-memory per agent — not both.

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hermes · Apple Music authorization</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 4rem auto; padding: 0 1rem; line-height: 1.5; }
+      button { font-size: 1rem; padding: 0.6rem 1.2rem; cursor: pointer; }
+      pre { background: #f4f4f5; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+      .ok { color: #166534; } .err { color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <h1>Apple Music authorization</h1>
+    <p>
+      This page uses MusicKit JS to sign you in to your Apple Music account and
+      obtain a <strong>Music User Token</strong>. The token is sent back to the
+      local helper and stored for the Hermes music tools. Nothing leaves your
+      machine.
+    </p>
+    <p><button id="authorize">Authorize Apple Music</button></p>
+    <pre id="status">Idle.</pre>
+
+    <!-- MusicKit JS v3 -->
+    <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js" data-web-components async></script>
+    <script>
+      // The developer token is injected by the local helper at "{{DEVELOPER_TOKEN}}".
+      const DEVELOPER_TOKEN = "{{DEVELOPER_TOKEN}}";
+      const statusEl = document.getElementById("status");
+
+      document.addEventListener("musickitloaded", async () => {
+        try {
+          await MusicKit.configure({
+            developerToken: DEVELOPER_TOKEN,
+            app: { name: "Hermes Music Tools", build: "0.1.0" },
+          });
+          statusEl.textContent = "MusicKit configured. Click Authorize.";
+        } catch (e) {
+          statusEl.className = "err";
+          statusEl.textContent = "MusicKit configure failed: " + e;
+        }
+      });
+
+      document.getElementById("authorize").addEventListener("click", async () => {
+        try {
+          const music = MusicKit.getInstance();
+          const userToken = await music.authorize();
+          statusEl.className = "ok";
+          statusEl.textContent = "Authorized. Sending token to local helper…";
+          const resp = await fetch("/save-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ music_user_token: userToken }),
+          });
+          statusEl.textContent = resp.ok
+            ? "✅ Music User Token saved. You can close this tab."
+            : "Saved-token request failed: HTTP " + resp.status;
+        } catch (e) {
+          statusEl.className = "err";
+          statusEl.textContent = "Authorization failed: " + e;
+        }
+      });
+    </script>
+  </body>
+</html>

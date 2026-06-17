@@ -1,0 +1,12 @@
+tidal
+
+lFxZKDW8oyamDMk3
+92hRReEi8zc6TpFavNuZ1JJKaZ9vT6uiBQzHxnb42cE=
+
+
+trade.laminaticus.hermesmusic
+media.trade.laminaticus.hermesmusic
+
+Name:hermes
+Key ID:HVSV48KH4N
+Services:Media Services (MusicKit, ShazamKit, Apple Music Feed)

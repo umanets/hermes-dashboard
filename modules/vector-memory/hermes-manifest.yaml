@@ -1,0 +1,105 @@
+# Hermes module: persistent semantic (vector) memory.
+# A BUNDLE: MCP server (recall) + capture hook (agent:end) + recall skill + an
+# optional cron summary. The dashboard installer resolves the ${...} placeholders
+# below when it lays the bundle into a connected install.
+#   ${INSTALL_DIR}  -> this module's directory
+#   ${HERMES_ROOT}  -> the connected Hermes install root
+#   ${VENV_PYTHON}  -> the module's resolved venv python
+manifest_version: 1
+
+name: vector-memory
+description: Persistent semantic memory — auto-captures links/files/notes each turn and recalls them on demand ("did I ever mention…").
+source: https://github.com/your-org/hermes-tools
+
+transport:
+  type: stdio
+  command: python
+  args:
+    - "${INSTALL_DIR}/server.py"
+
+install:
+  type: local
+  # The dashboard auto-bootstraps cross-platform (Windows + Ubuntu/macOS) on install:
+  # it creates .venv and runs `<.venv python> -m pip install -e .`. These entries are
+  # the manual-equivalent fallback only.
+  bootstrap:
+    - "python -m venv .venv"
+    - ".venv/Scripts/python -m pip install -e .   # Windows; Ubuntu/macOS: .venv/bin/python -m pip install -e ."
+  # Run once at install (venv python -c) to pre-download the embedding model so the
+  # agent's first memory_add/recall isn't a multi-minute download inside the MCP timeout.
+  warmup: "from chromadb.utils import embedding_functions as ef; ef.DefaultEmbeddingFunction()(['warmup'])"
+
+auth:
+  type: api_key
+  # The summary cron uses OpenRouter (OpenAI-compatible). Provide a key + model to
+  # enable it; leave all blank to run capture-only (heuristic, no LLM). The base
+  # URL defaults to OpenRouter and rarely needs changing.
+  env:
+    - name: VECTOR_SUMMARY_API_KEY
+      prompt: "OpenRouter API key for the summary cron (blank = heuristic capture only; also falls back to $OPENROUTER_API_KEY)"
+      required: false
+      secret: true
+    - name: VECTOR_SUMMARY_MODEL
+      prompt: "OpenRouter model id for summaries (default is cheap & verified)"
+      default: "qwen/qwen3-30b-a3b-instruct-2507"
+      required: false
+      secret: false
+    - name: VECTOR_SUMMARY_BASE_URL
+      prompt: "Summary base URL (OpenAI-compatible)"
+      default: "https://openrouter.ai/api/v1"
+      required: false
+      secret: false
+
+tools:
+  default_enabled:
+    - memory_recall
+    - memory_add
+    - memory_recent
+
+# Bulk-ingest a folder of Markdown (e.g. an Obsidian vault) into memory. The
+# dashboard shows an "Ingest" button that runs this script over a chosen folder.
+ingest:
+  script: "ingest.py"
+  label: "Ingest a Markdown folder (Obsidian vault) into memory"
+
+# Bundle extras the dashboard installs alongside the MCP server.
+provides:
+  # env vars set ON the mcp_servers.<name> block (passed to the server subprocess)
+  server_env:
+    VECTOR_MEMORY_DATA_DIR: "${HERMES_ROOT}/vector-memory"
+  # skill folders copied into <install>/skills/<dest>
+  skills:
+    - src: bundle/skills/memory/vector-recall
+      dest: skills/memory/vector-recall
+  # hook folders copied into <install>/hooks/<dest>; template => resolve ${...} in files
+  hooks:
+    - src: bundle/hooks/vector-capture
+      dest: hooks/vector-capture
+      template: true
+  # best-effort cron job merged into <install>/cron/jobs.json (verify w/ `hermes cron list`)
+  cron:
+    - id: vector-memory-summarize
+      name: "Vector memory — salient fact summary"
+      schedule: "*/15 * * * *"
+      no_agent: true
+      python: "${VENV_PYTHON}"
+      script: "${INSTALL_DIR}/summarize_job.py"
+      workdir: "${INSTALL_DIR}"
+      env:
+        VECTOR_MEMORY_DATA_DIR: "${HERMES_ROOT}/vector-memory"
+        VECTOR_MEMORY_STATE_DB: "${HERMES_ROOT}/state.db"
+
+post_install: |
+  Vector memory installed as a bundle:
+    • MCP server (recall): memory_recall / memory_add / memory_recent
+    • capture hook (agent:end): auto-stores links/files/notes each turn (zero LLM)
+    • recall skill: "did I ever mention …" → semantic recall
+    • cron summary: LLM fact distillation via OpenRouter — set VECTOR_SUMMARY_API_KEY
+      (+ optionally VECTOR_SUMMARY_MODEL) to enable; blank = heuristic capture only
+  The dashboard auto-installs everything cross-platform (Windows + Ubuntu/macOS): it copies
+  the module under <hermes-root>/modules, creates the venv, pip-installs, and registers cron.
+  Manual fallback if you ever bootstrap by hand:
+    cd <module dir> && python -m venv .venv
+    .venv/Scripts/python -m pip install -e .      # Windows
+    .venv/bin/python    -m pip install -e .       # Ubuntu/macOS
+  Restart the Hermes session to load the MCP + hook + skill.

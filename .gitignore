@@ -1,0 +1,32 @@
+# dependencies & build output
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.vite/
+coverage/
+*.log
+
+# python venvs / caches (apple-tidal lives at the repo root, modules/* too)
+.venv/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+*.pyc
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+*.p8
+**/apple_tokens.json
+
+# local scratch / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# personal test/ingest data dumps — NOT source (large + private)
+for_injest/
+*.dat

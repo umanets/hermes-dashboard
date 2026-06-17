@@ -1,0 +1,7 @@
+name: vector-capture
+description: >-
+  Auto-capture artifacts (links, files, Obsidian notes, explicit "remember"
+  statements) from each completed turn into vector memory. Runs on agent:end,
+  off the conversation's critical path, with zero LLM cost.
+events:
+  - agent:end

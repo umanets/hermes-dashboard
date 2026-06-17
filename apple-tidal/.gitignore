@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.p8
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+# local token store, if ever placed in-repo
+apple_tokens.json
+music_tools.db
