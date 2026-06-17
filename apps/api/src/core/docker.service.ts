@@ -76,9 +76,12 @@ export class DockerService {
   /** Build an image; streams build output line-by-line to onLine. */
   async buildImage(tag: string, contextDir: string, onLine: (l: string) => void): Promise<boolean> {
     const d = await this.docker();
+    // No `--progress=plain`: it's a BuildKit/buildx-only flag and errors on the
+    // legacy builder (older Docker without the buildx plugin). Output is already
+    // line-based here because we pipe it (no TTY), so the flag bought us nothing.
     const r = await this.shell.runStreaming(
       d,
-      ['build', '--progress=plain', '-t', tag, contextDir],
+      ['build', '-t', tag, contextDir],
       onLine,
       { timeoutMs: 60 * 60_000 },
     );
