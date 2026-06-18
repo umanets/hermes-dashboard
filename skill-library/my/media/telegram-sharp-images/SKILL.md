@@ -1,8 +1,9 @@
 ---
 name: telegram-sharp-images
-description: Use when delivering images on Telegram to ensure sharp native photos
-instead of blurry webpage previews. Works around Telegram's low-res OG thumbnail
-caching by using MEDIA:/path instead of Markdown ![]() links.
+description: >-
+  Use when delivering images on Telegram to ensure sharp native photos instead of
+  blurry webpage previews. Works around Telegram's low-res OG thumbnail caching by
+  using MEDIA:/path instead of Markdown ![]() links.
 version: 1.0.0
 author: Hermes Agent
 license: MIT
