@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
+import { readFile, rm } from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import { DockerService } from '../core/docker.service';
@@ -64,13 +64,22 @@ export class AppleAuthService {
     const job: AppleAuthJob = {
       id: jobId,
       status: 'running',
-      message: 'Opening the Apple Music sign-in page in your browser — complete it there…',
+      message:
+        'Opening the Apple Music sign-in page in your browser — complete it there. ' +
+        'NOTE: it authorizes whichever Apple account is signed into your browser; ' +
+        'to use a different account, sign out of Apple Music (or use a private window) first.',
       startedAt: new Date().toISOString(),
     };
     this.jobs.set(jobId, job);
 
     void (async () => {
       try {
+        // Drop any previously-captured token so we never write a STALE one to the
+        // selected agent: readStoredToken() must see a token captured by THIS run,
+        // or fail loudly. (The host store is just a transient capture file — agents
+        // read their own container config, not this path.)
+        await rm(this.storePath(), { force: true }).catch(() => undefined);
+
         // Blocks until the helper captures a token (browser sign-in) and exits, or times out.
         const r = await this.shell.run(venvPy, ['-m', 'music_service.cli', 'auth', 'apple'], {
           cwd: src,
