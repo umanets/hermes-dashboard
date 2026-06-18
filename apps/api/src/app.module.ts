@@ -6,6 +6,7 @@ import { HermesConfigModule } from './hermes-config/hermes-config.module';
 import { InstallationModule } from './installation/installation.module';
 import { McpModule } from './mcp/mcp.module';
 import { SkillsModule } from './skills/skills.module';
+import { SkillLibraryModule } from './skill-library/skill-library.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SkillsModule } from './skills/skills.module';
     InstallationModule,
     HermesConfigModule,
     SkillsModule,
+    SkillLibraryModule,
     McpModule,
     CatalogModule,
     FleetModule,

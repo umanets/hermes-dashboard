@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia';
-import { api, type CatalogModule, type Installation, type McpServer, type Skill } from './api';
+import { api, type CatalogModule, type Installation, type LibrarySkill, type McpServer, type Skill } from './api';
 
 interface State {
   installation: Installation | null;
   skills: Skill[];
   servers: McpServer[];
   catalog: CatalogModule[];
+  mySkills: LibrarySkill[];
+  communitySkills: LibrarySkill[];
   loading: boolean;
   error: string | null;
 }
@@ -16,6 +18,8 @@ export const useDashboard = defineStore('dashboard', {
     skills: [],
     servers: [],
     catalog: [],
+    mySkills: [],
+    communitySkills: [],
     loading: false,
     error: null,
   }),
@@ -51,7 +55,16 @@ export const useDashboard = defineStore('dashboard', {
       this.catalog = [];
     },
     async refreshAll() {
-      await Promise.all([this.refreshSkills(), this.refreshServers(), this.refreshCatalog()]);
+      await Promise.all([this.refreshSkills(), this.refreshServers(), this.refreshCatalog(), this.refreshLibrary()]);
+    },
+    async refreshLibrary() {
+      this.mySkills = (await api.skillLibrary('my').catch(() => [])) ?? [];
+      this.communitySkills = (await api.skillLibrary('community').catch(() => [])) ?? [];
+    },
+    async installLibrarySkill(collection: string, category: string, name: string) {
+      const res = await this.run(() => api.skillLibraryInstall(collection, category, name));
+      if (res) await this.refreshSkills(); // it now appears in the agent's Skills tab
+      return res;
     },
     async refreshSkills() {
       this.skills = (await this.run(() => api.skills())) ?? [];

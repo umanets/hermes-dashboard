@@ -61,8 +61,8 @@ export const useFleet = defineStore('fleet', {
         await this.refresh();
       }
     },
-    async create(name: string) {
-      const res = await this.run(() => api.fleetCreate(name));
+    async create(name: string, skills?: { collection?: string; category: string; name: string }[]) {
+      const res = await this.run(() => api.fleetCreate(name, skills));
       await this.refresh();
       return res;
     },

@@ -46,7 +46,7 @@ describe('FleetService (stubbed docker)', () => {
     const registry = new ClientRegistryService(new AtomicFileService(), paths);
     installation = new InstallationService(paths);
     docker = new FakeDocker();
-    fleet = new FleetService(registry, docker as any, installation, paths, new ShellService(), { mutate: async () => ({ backupPath: null }) } as any);
+    fleet = new FleetService(registry, docker as any, installation, paths, new ShellService(), { mutate: async () => ({ backupPath: null }) } as any, { seedInto: async () => [] } as any);
   });
   afterAll(async () => {
     process.env.CLIENTS_ROOT = prev;
@@ -128,7 +128,7 @@ describe('FleetService — shared Hindsight memory (stubbed docker)', () => {
     const paths = new PathService();
     const registry = new ClientRegistryService(new AtomicFileService(), paths);
     docker = new FakeDocker();
-    fleet = new FleetService(registry, docker as any, new InstallationService(paths), paths, new ShellService(), { mutate: async () => ({ backupPath: null }) } as any);
+    fleet = new FleetService(registry, docker as any, new InstallationService(paths), paths, new ShellService(), { mutate: async () => ({ backupPath: null }) } as any, { seedInto: async () => [] } as any);
   });
   afterAll(async () => {
     process.env.CLIENTS_ROOT = prevRoot;

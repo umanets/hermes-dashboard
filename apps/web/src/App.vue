@@ -5,13 +5,14 @@ import { useDashboard } from './store';
 import { useFleet } from './fleet';
 import AgentsPanel from './components/AgentsPanel.vue';
 import SkillsPanel from './components/SkillsPanel.vue';
+import SkillLibraryPanel from './components/SkillLibraryPanel.vue';
 import McpPanel from './components/McpPanel.vue';
 import CatalogPanel from './components/CatalogPanel.vue';
 
 const store = useDashboard();
 const fleet = useFleet();
 const view = ref<'agents' | 'manage'>('agents');
-const tab = ref<'skills' | 'mcp' | 'catalog'>('skills');
+const tab = ref<'skills' | 'my' | 'community' | 'mcp' | 'catalog'>('skills');
 const managingId = ref<string | null>(null);
 
 const managingName = computed(
@@ -57,10 +58,14 @@ function backToAgents() {
       <template v-if="store.installation?.valid">
         <div class="tabs">
           <button :class="{ active: tab === 'skills' }" @click="tab = 'skills'">Skills ({{ store.skills.length }})</button>
+          <button :class="{ active: tab === 'my' }" @click="tab = 'my'">My Skills ({{ store.mySkills.length }})</button>
+          <button :class="{ active: tab === 'community' }" @click="tab = 'community'">Community ({{ store.communitySkills.length }})</button>
           <button :class="{ active: tab === 'mcp' }" @click="tab = 'mcp'">MCP Servers ({{ store.servers.length }})</button>
           <button :class="{ active: tab === 'catalog' }" @click="tab = 'catalog'">Catalog ({{ store.catalog.length }})</button>
         </div>
         <SkillsPanel v-if="tab === 'skills'" />
+        <SkillLibraryPanel v-else-if="tab === 'my'" collection="my" />
+        <SkillLibraryPanel v-else-if="tab === 'community'" collection="community" />
         <McpPanel v-else-if="tab === 'mcp'" />
         <CatalogPanel v-else />
       </template>

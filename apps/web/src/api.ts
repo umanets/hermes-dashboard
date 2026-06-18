@@ -61,6 +61,16 @@ export interface CatalogModule {
   } | null;
 }
 
+export interface LibrarySkill {
+  collection: 'my' | 'community';
+  category: string;
+  name: string;
+  key: string;
+  description: string;
+  valid: boolean;
+  errors: string[];
+}
+
 export interface CredentialField {
   name: string;
   prompt: string;
@@ -202,12 +212,27 @@ export const api = {
     req<AppleAuthJob>('GET', `/catalog/apple-music/authorize-jobs/${encodeURIComponent(jobId)}`),
   appleSetToken: (token: string) => req<{ message: string }>('POST', '/catalog/apple-music/token', { token }),
 
+  // ---- skill library (my / community) ----
+  skillLibrary: (collection: string) => req<LibrarySkill[]>('GET', `/skill-library/${encodeURIComponent(collection)}`),
+  skillLibraryPreview: (collection: string, category: string, name: string) =>
+    req<{ collection: string; category: string; name: string; content: string }>(
+      'GET',
+      `/skill-library/${encodeURIComponent(collection)}/${encodeURIComponent(category)}/${encodeURIComponent(name)}/preview`,
+    ),
+  skillLibraryInstall: (collection: string, category: string, name: string) =>
+    req<{ placed: string }>('POST', `/skill-library/${encodeURIComponent(collection)}/install`, { category, name }),
+
   // ---- fleet ----
   fleetImage: () => req<ImageStatus>('GET', '/fleet/image'),
   fleetBuild: () => req<{ jobId: string }>('POST', '/fleet/image/build'),
   fleetBuildJob: (jobId: string) => req<ImageBuildJob>('GET', `/fleet/image/build-jobs/${encodeURIComponent(jobId)}`),
   fleetClients: () => req<ClientView[]>('GET', '/fleet/clients'),
-  fleetCreate: (name: string) => req<{ client: ClientView; setupCommand: string }>('POST', '/fleet/clients', { name }),
+  fleetCreate: (name: string, skills?: { collection?: string; category: string; name: string }[]) =>
+    req<{ client: ClientView; setupCommand: string; seededSkills: string[] }>(
+      'POST',
+      '/fleet/clients',
+      skills && skills.length ? { name, skills } : { name },
+    ),
   fleetStart: (id: string) => req('POST', `/fleet/clients/${encodeURIComponent(id)}/start`),
   fleetStop: (id: string) => req('POST', `/fleet/clients/${encodeURIComponent(id)}/stop`),
   fleetRestart: (id: string) =>

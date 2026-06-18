@@ -13,6 +13,7 @@ import { PathService } from '../core/path.service';
 import { ShellService } from '../core/shell.service';
 import { HermesConfigService } from '../hermes-config/hermes-config.service';
 import { InstallationService } from '../installation/installation.service';
+import { SkillLibraryService } from '../skill-library/skill-library.service';
 import { ClientRegistryService } from './client-registry.service';
 import { Client, ClientView, ImageBuildJob } from './fleet.types';
 
@@ -31,6 +32,7 @@ export class FleetService {
     private readonly paths: PathService,
     private readonly shell: ShellService,
     private readonly config: HermesConfigService,
+    private readonly skillLibrary: SkillLibraryService,
   ) {}
 
   private repoUrl(): string {
@@ -262,7 +264,10 @@ export class FleetService {
     return `docker exec -it ${c.containerName} hermes setup`;
   }
 
-  async createClient(name: string): Promise<{ client: Client; setupCommand: string }> {
+  async createClient(
+    name: string,
+    skills: { collection?: string; category: string; name: string }[] = [],
+  ): Promise<{ client: Client; setupCommand: string; seededSkills: string[] }> {
     const id = this.slug(name);
     if (!id) throw new UnprocessableEntityException('A non-empty client name is required.');
     if (await this.registry.get(id)) throw new ConflictException(`Client '${id}' already exists.`);
@@ -299,7 +304,19 @@ export class FleetService {
       createdAt: new Date().toISOString(),
     };
     await this.registry.add(client);
-    return { client, setupCommand: this.setupCommand(client) };
+
+    // Seed selected library skills into the new volume's skills/ dir. Distinct
+    // paths (e.g. media/telegram-sharp-images) won't collide with cont-init's
+    // bundled-skill seeding. Best-effort: a bad skill doesn't fail creation.
+    let seededSkills: string[] = [];
+    if (skills.length) {
+      try {
+        seededSkills = await this.skillLibrary.seedInto(path.join(hostDir, 'skills'), skills);
+      } catch (e) {
+        this.logger.warn(`skill seeding failed for ${id}: ${(e as Error).message}`);
+      }
+    }
+    return { client, setupCommand: this.setupCommand(client), seededSkills };
   }
 
   private async require(id: string): Promise<Client> {

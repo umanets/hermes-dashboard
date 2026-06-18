@@ -2,7 +2,12 @@ import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query 
 import { z } from 'zod';
 import { FleetService } from './fleet.service';
 
-const CreateSchema = z.object({ name: z.string().min(1) });
+const CreateSchema = z.object({
+  name: z.string().min(1),
+  skills: z
+    .array(z.object({ collection: z.string().optional(), category: z.string().min(1), name: z.string().min(1) }))
+    .optional(),
+});
 
 @Controller('api/fleet')
 export class FleetController {
@@ -58,7 +63,7 @@ export class FleetController {
   create(@Body() body: unknown) {
     const parsed = CreateSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException(parsed.error.issues);
-    return this.fleet.createClient(parsed.data.name);
+    return this.fleet.createClient(parsed.data.name, parsed.data.skills ?? []);
   }
 
   @Post('clients/:id/start')

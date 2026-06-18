@@ -2,13 +2,22 @@
 import { onMounted, ref } from 'vue';
 import { api } from '../api';
 import { useFleet } from '../fleet';
+import { useDashboard } from '../store';
 
 const emit = defineEmits<{ manage: [id: string] }>();
 const fleet = useFleet();
+const dash = useDashboard();
 
 const newName = ref('');
 const creating = ref(false);
 const createdCmd = ref<string | null>(null);
+const seedKeys = ref<Set<string>>(new Set()); // My Skills selected to seed into the new agent
+
+function toggleSeed(key: string) {
+  const next = new Set(seedKeys.value);
+  next.has(key) ? next.delete(key) : next.add(key);
+  seedKeys.value = next;
+}
 const logsFor = ref<string | null>(null);
 const logsText = ref('');
 const memLogs = ref('');
@@ -18,6 +27,7 @@ const memBusy = ref<string | null>(null);
 onMounted(async () => {
   await fleet.refresh();
   loadMemory();
+  dash.refreshLibrary(); // My Skills list for the create picker (global, no install needed)
 });
 
 async function loadMemory() {
@@ -57,11 +67,13 @@ const setupCmd = (containerName: string) => `docker exec -it ${containerName} he
 async function create() {
   if (!newName.value.trim()) return;
   creating.value = true;
-  const res = await fleet.create(newName.value.trim());
+  const skills = dash.mySkills.filter((s) => seedKeys.value.has(s.key)).map((s) => ({ collection: 'my', category: s.category, name: s.name }));
+  const res = await fleet.create(newName.value.trim(), skills);
   creating.value = false;
   if (res) {
-    createdCmd.value = res.setupCommand;
+    createdCmd.value = res.setupCommand + (res.seededSkills?.length ? `\nSeeded skills: ${res.seededSkills.join(', ')}` : '');
     newName.value = '';
+    seedKeys.value = new Set();
   }
 }
 
@@ -159,9 +171,25 @@ async function showLogs(id: string) {
   </div>
 
   <!-- create -->
-  <div class="bar" style="margin:14px 0">
+  <div class="bar" style="margin:14px 0 6px">
     <input v-model="newName" placeholder="New client name (e.g. acme-alice)" @keyup.enter="create" />
     <button :disabled="creating || !fleet.image?.exists" @click="create">+ Agent</button>
+  </div>
+  <div v-if="dash.mySkills.length" class="card" style="margin:0 0 14px; padding:10px 12px">
+    <div class="muted" style="font-size:12px; margin-bottom:6px">Seed My Skills into the new agent (copied into its volume):</div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px">
+      <label
+        v-for="s in dash.mySkills"
+        :key="s.key"
+        class="chip"
+        :class="seedKeys.has(s.key) ? 'on' : 'off'"
+        style="cursor:pointer; display:inline-flex; align-items:center; gap:6px"
+        :title="s.description"
+      >
+        <input type="checkbox" :checked="seedKeys.has(s.key)" style="margin:0" @change="toggleSeed(s.key)" />
+        {{ s.category }}/{{ s.name }}
+      </label>
+    </div>
   </div>
   <div v-if="createdCmd" class="ok" style="margin-bottom:12px">
     Agent created. Run initial setup in a terminal:
