@@ -28,5 +28,5 @@ coverage/
 *.swp
 
 # personal test/ingest data dumps — NOT source (large + private)
-for_injest/
+for_ingest/
 *.dat

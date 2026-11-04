@@ -129,7 +129,7 @@ export class FleetService {
         timeoutMs: 30 * 60_000,
       });
       if (!r.ok) {
-        throw new Error('git clone failed — check SSH access to the private your-org/hermes-agent repo (see log)');
+        throw new Error('git clone failed — check SSH access to the configured hermes-agent source repo (see log)');
       }
     }
     if (!existsSync(path.join(dir, 'Dockerfile'))) {
