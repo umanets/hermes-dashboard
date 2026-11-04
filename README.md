@@ -1,6 +1,6 @@
 # Hermes Tools — Management Dashboard + Module Catalog
 
-A web app for **provisioning a client's [Hermes](https://) agent installation**, plus a
+A web app for **provisioning a client's Hermes agent installation**, plus a
 catalog of installable modules. The operator points the dashboard at a Hermes install
 folder and, over the **local filesystem**, enables/disables skills and MCP tools and
 injects per-client credentials — without depending on Hermes running.
@@ -16,9 +16,7 @@ hermes-tools/
     apple-tidal/   (Apple Music + TIDAL MCP)   ← see note below
 ```
 
-> **pnpm note:** the plan targeted pnpm, but corepack/pnpm is blocked in this environment
-> (`EPERM` on the nvm dir), so the repo uses **npm workspaces** instead — functionally
-> equivalent for `apps/*`.
+> **Note:** the repo uses **npm workspaces** (not pnpm) — functionally equivalent for `apps/*`.
 
 > **apple-tidal relocation is deferred:** moving `apple-tidal/` into `modules/` is pending
 > because the live Hermes `music` MCP server still has it open. The catalog scanner is
@@ -54,7 +52,7 @@ sudo apt install -y docker.io git python3 python3-venv python3-pip
 # 2) Add yourself to the docker group so `docker` runs without sudo, then RE-LOGIN
 sudo usermod -aG docker "$USER"
 newgrp docker            # or just log out/in
-ssh -T git@github.com    # confirm SSH access to the private hermes-agent repo
+ssh -T git@github.com    # confirm SSH access to the hermes-agent source repo
 
 # 3) Get the code + configure
 git clone <repo-or-bundle> hermes-tools && cd hermes-tools
@@ -77,7 +75,7 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - && sudo apt insta
 # Docker engine (+ run docker without sudo), git, python (for host-side module installs / Apple auth)
 sudo apt install -y docker.io git python3 python3-venv python3-pip
 sudo usermod -aG docker "$USER"     # log out/in so `docker` works without sudo
-ssh -T git@github.com               # SSH access to the private hermes-agent repo (for image build)
+ssh -T git@github.com               # SSH access to the hermes-agent source repo (for image build)
 ```
 
 **2. Configure** — copy `.env.example` to `.env` (in the repo root) and fill it in. On **Linux set
